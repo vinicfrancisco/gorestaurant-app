@@ -54,27 +54,43 @@ const Dashboard: React.FC = () => {
   const navigation = useNavigation();
 
   async function handleNavigate(id: number): Promise<void> {
-    // Navigate do ProductDetails page
+    navigation.navigate('FoodDetails', { id });
   }
 
   useEffect(() => {
     async function loadFoods(): Promise<void> {
-      // Load Foods from API
+      if (categories.length) {
+        const response = await api.get<Food[]>('/foods', {
+          params: {
+            category_like: selectedCategory,
+            name_like: searchValue || null,
+          },
+        });
+
+        const foodData = response.data.map((food: Food) => ({
+          ...food,
+          formattedPrice: formatValue(food.price),
+        }));
+
+        setFoods(foodData);
+      }
     }
 
     loadFoods();
-  }, [selectedCategory, searchValue]);
+  }, [selectedCategory, searchValue, categories]);
 
   useEffect(() => {
     async function loadCategories(): Promise<void> {
-      // Load categories from API
+      const response = await api.get<Category[]>('/categories');
+
+      setCategories(response.data);
     }
 
     loadCategories();
   }, []);
 
   function handleSelectCategory(id: number): void {
-    // Select / deselect category
+    setSelectedCategory(id === selectedCategory ? undefined : id);
   }
 
   return (
@@ -88,6 +104,7 @@ const Dashboard: React.FC = () => {
           onPress={() => navigation.navigate('Home')}
         />
       </Header>
+
       <FilterContainer>
         <SearchInput
           value={searchValue}
@@ -95,9 +112,11 @@ const Dashboard: React.FC = () => {
           placeholder="Qual comida você procura?"
         />
       </FilterContainer>
+
       <ScrollView>
         <CategoryContainer>
           <Title>Categorias</Title>
+
           <CategorySlider
             contentContainerStyle={{
               paddingHorizontal: 20,
@@ -117,13 +136,16 @@ const Dashboard: React.FC = () => {
                   style={{ width: 56, height: 56 }}
                   source={{ uri: category.image_url }}
                 />
+
                 <CategoryItemTitle>{category.title}</CategoryItemTitle>
               </CategoryItem>
             ))}
           </CategorySlider>
         </CategoryContainer>
+
         <FoodsContainer>
           <Title>Pratos</Title>
+
           <FoodList>
             {foods.map(food => (
               <Food
@@ -138,6 +160,7 @@ const Dashboard: React.FC = () => {
                     source={{ uri: food.thumbnail_url }}
                   />
                 </FoodImageContainer>
+
                 <FoodContent>
                   <FoodTitle>{food.name}</FoodTitle>
                   <FoodDescription>{food.description}</FoodDescription>
